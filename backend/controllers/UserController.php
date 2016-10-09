@@ -1,6 +1,7 @@
 <?php
 namespace backend\controllers;
 
+use common\models\User;
 use Yii;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
@@ -8,14 +9,16 @@ use yii\filters\AccessControl;
 use common\models\LoginForm;
 
 /**
- * Site controller
+ * User controller
  */
-class SiteController extends Controller
+class UserController extends Controller
 {
-    //public $layout = 'cube.php';
     /**
      * @inheritdoc
      */
+
+    public $layout = 'cube.php';
+
     public function behaviors()
     {
         return [
@@ -27,7 +30,7 @@ class SiteController extends Controller
                         'allow' => true,
                     ],
                     [
-                        'actions' => ['logout', 'index'],
+                        'actions' => ['logout', 'index','delete'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -61,7 +64,9 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
+        return $this->render('list', [
+            'users' => User::find()->all()
+        ]);
     }
 
     /**
@@ -76,7 +81,7 @@ class SiteController extends Controller
         }
 
         $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
+        if ($model->load(Yii::$app->request->post()) && $model->login(true)) {
             return $this->goBack();
         } else {
             return $this->render('login', [
@@ -95,5 +100,30 @@ class SiteController extends Controller
         Yii::$app->user->logout();
 
         return $this->goHome();
+    }
+
+    /**
+     * Delete one tweet.
+     *
+     * @return mixed
+     */
+    public function actionDelete()
+    {
+        $id = (int)Yii::$app->request->get('id');
+        if (is_numeric($id))
+        {
+            $user = User::findOne(['id'=> $id]);
+            if ($user)
+            {
+                $user->delete();
+            }
+        }
+
+        return $this->redirect(['user/index']);
+        /*
+        return $this->render('list', [
+            'users' => User::find()->all()
+        ]);
+        */
     }
 }

@@ -1,15 +1,17 @@
 <?php
 namespace backend\controllers;
 
+use common\models\TweetPublish;
 use common\models\Tweets;
 use Yii;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
 use yii\filters\AccessControl;
 use common\models\LoginForm;
+use yii\web\UploadedFile;
 
 /**
- * Site controller
+ * Blog controller
  */
 class BlogController extends Controller
 {
@@ -30,19 +32,9 @@ class BlogController extends Controller
                         'allow' => true,
                     ],
                     [
-                        'actions' => ['logout', 'index'],
+                        'actions' => ['logout', 'index','create-tweet','create-timestamp-tweet','delete-tweet'],
                         'allow' => true,
                         'roles' => ['@'],
-                    ],
-                    [
-                        'actions' => ['create-tweet', 'index'],
-                        'allow' => true,
-                        'roles' => ['?'],
-                    ],
-                    [
-                        'actions' => ['create-timestamp-tweet', 'index'],
-                        'allow' => true,
-                        'roles' => ['?'],
                     ],
                 ],
             ],
@@ -75,61 +67,35 @@ class BlogController extends Controller
     public function actionIndex()
     {
         //return $this->render('index');
-        return $this->render('create-tweet',[
-            'tweet' => new Tweets()
-        ]);
-    }
-
-    /**
-     * Login action.
-     *
-     * @return string
-     */
-    public function actionLogin()
-    {
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
-        }
-
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        } else {
-            return $this->render('login', [
-                'model' => $model,
-            ]);
-        }
-    }
-
-    /**
-     * Logout action.
-     *
-     * @return string
-     */
-    public function actionLogout()
-    {
-        Yii::$app->user->logout();
-
-        return $this->goHome();
+        return $this->actionFeed();
     }
 
     public function actionCreateTweet()
     {
-        $tweet = new Tweets();
+        $tweet_form = new TweetPublish();
 
-        $post = Yii::$app->request->post('Tweets');
+        $post = Yii::$app->request->post('TweetPublish');
         if (count($post))
         {
-            $tweet->text = $post['text'];
+            $picture = UploadedFile::getInstance($tweet_form,'image');
+            $image = null;
 
-            if ($tweet->save())
+            if($picture)
             {
-                $tweet = new Tweets();
+                $image = TweetPublish::uploadImage($picture);
+            }
+
+            $tweet_form->text =  $post['text'];
+            $tweet_form->image =  $image;
+
+            if ($tweet_form->createTweet())
+            {
+                return $this->refresh();
             }
         }
 
         return $this->render('create-tweet',[
-            'tweet' => $tweet
+            'tweet_form' => $tweet_form
         ]);
     }
 
@@ -140,6 +106,7 @@ class BlogController extends Controller
         {
             $tweet = new Tweets();
             $tweet->text = time().'';
+            $tweet->user_id = Yii::$app->getUser()->id;
             $result  = $tweet->save();
         }
 
@@ -148,4 +115,39 @@ class BlogController extends Controller
         ]);
 
     }
+
+    /**
+     * Displays feed page.
+     *
+     * @return mixed
+     */
+    public function actionFeed()
+    {
+        return $this->render('feed', [
+            'tweets' => Tweets::find()->all()
+        ]);
+    }
+
+    /**
+     * Delete one tweet.
+     *
+     * @return mixed
+     */
+    public function actionDeleteTweet()
+    {
+        $id = (int)Yii::$app->request->get('id');
+        if (is_numeric($id))
+        {
+            $tweet = Tweets::findOne(['id'=> $id]);
+            if ($tweet)
+            {
+                $tweet->delete();
+            }
+        }
+
+        return $this->render('feed', [
+            'tweets' => Tweets::find()->all()
+        ]);
+    }
+
 }

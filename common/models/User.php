@@ -6,6 +6,7 @@ use yii\base\NotSupportedException;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
+use common\models\UserCategory;
 
 /**
  * User model
@@ -17,6 +18,7 @@ use yii\web\IdentityInterface;
  * @property string $email
  * @property string $auth_key
  * @property integer $status
+ * @property integer $category_id
  * @property integer $created_at
  * @property integer $updated_at
  * @property string $password write-only password
@@ -186,4 +188,43 @@ class User extends ActiveRecord implements IdentityInterface
     {
         $this->password_reset_token = null;
     }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCategory()
+    {
+        return $this->hasOne(UserCategory::className(), ['id' => 'category_id']);
+    }
+
+    /**
+     * @return false|int category id if it successfully set
+     */
+    public function setCategory($category = 'user')
+    {
+        $category = trim(strtoupper($category));
+
+        if(!$category)
+        {
+            return false;
+        }
+
+        if ($category === 'USER')
+        {
+            $this->category_id = UserCategory::getUser()->id;
+        }
+
+        if ($category === 'ADMIN')
+        {
+            $this->category_id = UserCategory::getAdmin()->id;
+        }
+
+        return $this->category_id === null ? false : $this->category_id ;
+    }
+
+    public function isAdmin()
+    {
+        return $this->category_id === UserCategory::getAdmin()->id;
+    }
+
 }

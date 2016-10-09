@@ -53,13 +53,18 @@ class LoginForm extends Model
      *
      * @return boolean whether the user is logged in successfully
      */
-    public function login()
+    public function login($backend = false)
     {
-        if ($this->validate()) {
+        if ($this->validate())
+        {
+            if (!$this->_user->isAdmin() & $backend)
+            {
+                return false;
+
+            }
             return Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600 * 24 * 30 : 0);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /**
@@ -74,5 +79,11 @@ class LoginForm extends Model
         }
 
         return $this->_user;
+    }
+
+    public function validate($attributeNames = null, $clearErrors = true)
+    {
+
+        return parent::validate($attributeNames ,$clearErrors);
     }
 }

@@ -52,7 +52,17 @@ class SignupForm extends Model
         $user->email = $this->email;
         $user->setPassword($this->password);
         $user->generateAuthKey();
+        $user->setCategory();
         
         return $user->save() ? $user : null;
+    }
+
+    public function  attributeLabels()
+    {
+        return [
+            'username' => 'Имя',
+            'email' => 'Почтовый ящик',
+            'password' => 'Пароль',
+        ];
     }
 }
